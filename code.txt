@@ -1,0 +1,164 @@
+ORG 0000H
+MOV DPTR , #MY_COM
+C1:CLR A
+MOVC A,@A+DPTR
+ACALL COMMD
+ACALL DELAY
+JZ L18
+INC DPTR
+SJMP C1
+L18: MOV DPTR,#MY_DATA
+D1: CLR A
+MOVC A,@A+DPTR
+ACALL DATA1
+ACALL DELAY
+ACALL DELAY
+ACALL DELAY
+ACALL DELAY
+INC DPTR
+JZ BS2
+SJMP D1
+BS2:	 MOV R0,#30H
+BS:       MOV P2, #0FFH
+		  MOV R5, #05H
+		  MOV R1,A
+		  MOV A, #38H
+		  ACALL COMMD
+		  ACALL DELAY
+		  MOV A, #0EH
+		  ACALL COMMD
+		  ACALL DELAY
+		  MOV A, #01H
+		  ACALL COMMD
+		  ACALL DELAY
+		  MOV A, #06H
+		  ACALL COMMD
+		  ACALL DELAY
+		  MOV A, #84H
+		  ACALL COMMD
+		  ACALL DELAY
+		  ACALL DELAY
+K1:       MOV P1, #00
+          MOV A , P2
+          ANL A, #0FH
+          CJNE A, #0FH, K1 
+K2: 	  ACALL DELAY
+	      MOV A , P2
+		  ANL A, #0FH
+          CJNE A, #0FH, OVER
+		  SJMP K2
+OVER:     ACALL DELAY
+		  MOV A , P2
+		  ANL A, #0FH
+          CJNE A, #0FH, OVER1
+		  SJMP K2
+OVER1:    MOV P1, #0FEH
+		  MOV A , P2
+		  ANL A, #0FH
+          CJNE A, #0FH, ROW0
+		  MOV P1, #0FDH
+		  MOV A , P2
+		  ANL A, #0FH
+          CJNE A, #0FH, ROW1
+		  MOV P1, #0FBH
+		  MOV A , P2
+		  ANL A, #0FH
+          CJNE A, #0FH, ROW2
+		  MOV P1, #0F7H
+		  MOV A , P2
+		  ANL A, #0FH
+          CJNE A, #0FH, ROW3
+		  LJMP K2
+
+ROW0 :    MOV DPTR, #KCOD0
+		  SJMP FIND
+ROW1 :    MOV DPTR, #KCOD1
+		  SJMP FIND
+ROW2:	  MOV DPTR, #KCOD2
+		  SJMP FIND
+ROW3 :    MOV DPTR, #KCOD3
+		  SJMP FIND
+FIND :    RRC A
+          JNC match
+          INC DPTR
+          SJMP FIND
+match :	  CLR A 
+          MOVC A , @A+DPTR
+		  ACALL DATA1
+		  ACALL DELAY
+		  ACALL STORE	
+		  DEC R5
+		  MOV A,R5
+		  JZ COMPARE
+		  LJMP K1
+   HERE1: SJMP HERE1
+STORE: MOV @R0,A
+       INC R0
+	   RET
+COMPARE: MOV R0,#30H
+         CJNE @R0,#'U',DISPLAY
+		 INC R0
+		 CJNE @R0,#'I',DISPLAY
+		 INC R0
+		  CJNE @R0,#'E',DISPLAY
+		 INC R0
+		 CJNE @R0,#'T',DISPLAY
+		 INC R0
+		 CJNE @R0,#'1',DISPLAY
+		  MOV A,#01H
+          ACALL COMMD
+		  ACALL DELAY
+		  MOV DPTR,#SUCCESS
+QW2:	  CLR A
+		  MOVC A,@A+DPTR
+		  ACALL DATA1
+		  ACALL DELAY
+		  INC DPTR
+		  JZ HERE6
+		  SJMP QW2
+HERE6:    SJMP HERE6
+HERE10:   LJMP BS2		 
+COMMD: 	  MOV P0,A
+          CLR P3.0
+		  SETB P3.1
+		  ACALL DELAY
+		  CLR P3.1
+		  RET
+DISPLAY:  ACALL DELAY
+          MOV A,#01H
+          ACALL COMMD
+		  ACALL DELAY
+		  MOV DPTR,#RETRY
+QW:		  CLR A
+		  MOVC A,@A+DPTR
+		  ACALL DATA1
+		  ACALL DELAY
+		  INC DPTR
+		  JZ HERE10
+		  SJMP QW
+		   
+DATA1:    MOV P0,A
+          SETB P3.0
+		  SETB P3.1
+		  ACALL DELAY
+		  CLR P3.1
+		  RET
+
+DELAY: 	  MOV R3, #255
+HERE2:    MOV R4, #255
+HERE:     DJNZ R4, HERE
+		  DJNZ R3, HERE2
+		  RET
+   ORG 6000H
+KCOD0:    DB  'U' , 'I' , 'E' , 'T'
+KCOD1:    DB  'E' , 'F' , 'G' , 'H'
+KCOD2:    DB  '0' , '1' , '2' , '3'
+KCOD3:    DB  '4' , '5' , '6' , '7'
+		 
+ORG 7000H
+MY_COM: DB 38H,0CH,01H,06H,0
+
+MY_DATA: DB "ENTER PASSWORD ",0	
+RETRY: DB "RETRY",0
+SUCCESS: DB "SUCCESS",0	  
+END
